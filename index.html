@@ -279,6 +279,20 @@
             cursor: pointer;
             margin-top: 20px;
             font-family: var(--ui-font);
+            min-width: 200px;
+        }
+        
+        .permission-request .btn-close-permission {
+            background: transparent;
+            color: #94a3b8;
+            border: 2px solid #334155;
+            padding: 12px 30px;
+            font-size: 1rem;
+            margin-top: 10px;
+        }
+        
+        .permission-request .btn-close-permission:hover {
+            background: rgba(255,255,255,0.05);
         }
         
         .permission-request p {
@@ -286,6 +300,20 @@
             font-size: 1.1rem;
             line-height: 1.6;
             max-width: 400px;
+        }
+        
+        .permission-request .error-text {
+            color: #ef4444;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .permission-request .loading-text {
+            color: #60a5fa;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            display: none;
         }
     </style>
 </head>
@@ -303,7 +331,12 @@
         <h2 style="color:white; margin-bottom:20px;">🎤 Permissão do Microfone</h2>
         <p>Para usar o tradutor por voz, precisamos da sua permissão para acessar o microfone.</p>
         <p style="font-size:0.9rem; color:#94a3b8; margin-top:10px;">Clique no botão abaixo e permita o acesso quando solicitado.</p>
-        <button onclick="requestMicrophonePermission()">✅ Permitir Microfone</button>
+        
+        <div class="loading-text" id="permissionLoading">⏳ Solicitando permissão...</div>
+        <div class="error-text" id="permissionError">❌ Não foi possível obter permissão. Tente novamente.</div>
+        
+        <button onclick="requestMicrophonePermission()" id="btnAllowPermission">✅ Permitir Microfone</button>
+        <button class="btn-close-permission" onclick="closePermissionPopup()">✕ Fechar</button>
     </div>
 
     <div id="pocket-mode">
@@ -430,7 +463,6 @@
                 const data = await response.json();
                 const latestVersion = data.tag_name.replace('v', '');
                 
-                // Compara versões
                 if (isNewerVersion(latestVersion, APP_VERSION)) {
                     showUpdateNotification(latestVersion, data.body || '');
                 }
@@ -457,32 +489,36 @@
             const messageEl = document.getElementById('update-message');
             const versionEl = document.getElementById('update-version');
             
-            // Mostra a notificação
             messageEl.textContent = `📱 Nova atualização disponível!`;
             versionEl.textContent = `v${version}`;
             notification.style.display = 'block';
             
-            // Adiciona o changelog se disponível
-            if (changelog) {
-                const changelogPreview = changelog.split('\n').slice(0, 3).join('\n');
-                if (changelogPreview) {
-                    messageEl.textContent = `📱 Nova versão v${version} disponível!`;
-                }
-            }
-            
-            // Esconde após 3 segundos
             setTimeout(() => {
                 notification.style.display = 'none';
             }, 3000);
             
-            // Salva a versão que foi notificada
             localStorage.setItem('lastNotifiedVersion', version);
         }
 
         // ============================================
-        // PERMISSÃO DO MICROFONE (APK)
+        // PERMISSÃO DO MICROFONE (CORRIGIDA)
         // ============================================
+        function closePermissionPopup() {
+            document.getElementById('permissionPopup').classList.remove('show');
+            document.getElementById('permissionLoading').style.display = 'none';
+            document.getElementById('permissionError').style.display = 'none';
+        }
+
         async function requestMicrophonePermission() {
+            const btn = document.getElementById('btnAllowPermission');
+            const loading = document.getElementById('permissionLoading');
+            const error = document.getElementById('permissionError');
+            
+            btn.disabled = true;
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            btn.textContent = '⏳ Aguarde...';
+            
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     audio: { 
@@ -491,34 +527,44 @@
                         autoGainControl: true
                     } 
                 });
+                
                 stream.getTracks().forEach(track => track.stop());
                 permissionGranted = true;
-                document.getElementById('permissionPopup').classList.remove('show');
-                micStatus.textContent = '✅ Permissão concedida! Clique no microfone.';
-                initSpeech();
                 
-                // Tenta iniciar o microfone automaticamente
+                loading.style.display = 'none';
+                btn.textContent = '✅ Permitido!';
+                
                 setTimeout(() => {
-                    if (rec && permissionGranted) {
-                        try {
-                            rec.start();
-                            micStatus.textContent = '🎤 Ouvindo... Fale agora';
-                        } catch(e) {}
-                    }
+                    closePermissionPopup();
+                    micStatus.textContent = '✅ Permissão concedida! Clique no microfone.';
+                    initSpeech();
+                    
+                    setTimeout(() => {
+                        if (rec && permissionGranted) {
+                            try {
+                                rec.start();
+                                micStatus.textContent = '🎤 Ouvindo... Fale agora';
+                            } catch(e) {
+                                console.log('Erro ao iniciar microfone:', e);
+                            }
+                        }
+                    }, 500);
                 }, 500);
                 
                 return true;
             } catch (err) {
                 console.error('Erro ao solicitar permissão:', err);
-                micStatus.textContent = '❌ Permissão negada. Tente novamente.';
-                document.getElementById('permissionPopup').classList.add('show');
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = '✅ Tentar Novamente';
+                micStatus.textContent = '❌ Permissão negada. Clique no botão para tentar novamente.';
                 return false;
             }
         }
 
         async function checkMicrophonePermission() {
             try {
-                // Tenta usar a Permissions API
                 if (navigator.permissions && navigator.permissions.query) {
                     const result = await navigator.permissions.query({ name: 'microphone' });
                     if (result.state === 'granted') {
@@ -533,7 +579,6 @@
                     }
                 }
                 
-                // Fallback: tenta acessar diretamente
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 stream.getTracks().forEach(track => track.stop());
                 permissionGranted = true;
@@ -1002,7 +1047,6 @@
         };
 
         window.onload = () => {
-            // Carrega configurações
             document.getElementById('h1').value = localStorage.getItem('next_h1') || 220;
             document.getElementById('h2').value = localStorage.getItem('next_h2') || 160;
             document.getElementById('fs').value = localStorage.getItem('next_fs') || 16;
@@ -1012,15 +1056,12 @@
             apply(); 
             renderHist();
             
-            // Verifica permissão do microfone
             checkMicrophonePermission();
             
-            // Verifica atualizações
             setTimeout(() => {
                 checkForUpdates();
             }, 2000);
             
-            // Carrega vozes
             if (window.speechSynthesis.getVoices().length === 0) {
                 window.speechSynthesis.onvoiceschanged = () => {
                     console.log('Vozes carregadas:', window.speechSynthesis.getVoices().length);
@@ -1028,7 +1069,6 @@
             }
         };
 
-        // Salva configurações
         document.getElementById('repeatMode').addEventListener('change', function() {
             localStorage.setItem('repeatMode', this.checked);
         });
@@ -1037,9 +1077,6 @@
             localStorage.setItem('checkUpdates', this.checked);
         });
 
-        // ============================================
-        // FUNÇÕES AUXILIARES
-        // ============================================
         function openMod(id) { 
             document.getElementById(id).style.display = 'flex'; 
         }
