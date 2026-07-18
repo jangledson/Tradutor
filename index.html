@@ -39,6 +39,50 @@
             font-family: var(--ui-font);
         }
 
+        /* Notificação de atualização */
+        #update-notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 15px;
+            font-weight: bold;
+            z-index: 10000;
+            display: none;
+            box-shadow: 0 10px 40px rgba(59, 130, 246, 0.5);
+            font-family: var(--ui-font);
+            text-align: center;
+            max-width: 90%;
+            animation: slideDown 0.5s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateX(-50%) translateY(-100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        #update-notification .update-emoji {
+            font-size: 1.5rem;
+            margin-right: 10px;
+        }
+
+        #update-notification .update-version {
+            background: rgba(255,255,255,0.2);
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-left: 8px;
+        }
+
         #pocket-mode {
             position: fixed;
             top: 0; left: 0;
@@ -204,9 +248,63 @@
             font-size: 0.8rem;
             color: var(--text-dim);
         }
+        
+        .permission-request {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .permission-request.show {
+            display: flex;
+        }
+        
+        .permission-request button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            margin-top: 20px;
+            font-family: var(--ui-font);
+        }
+        
+        .permission-request p {
+            color: white;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            max-width: 400px;
+        }
     </style>
 </head>
 <body>
+
+    <!-- Notificação de atualização -->
+    <div id="update-notification">
+        <span class="update-emoji">🔄</span>
+        <span id="update-message">Nova atualização disponível!</span>
+        <span class="update-version" id="update-version">v2.0.0</span>
+    </div>
+
+    <!-- Popup de permissão do microfone -->
+    <div class="permission-request" id="permissionPopup">
+        <h2 style="color:white; margin-bottom:20px;">🎤 Permissão do Microfone</h2>
+        <p>Para usar o tradutor por voz, precisamos da sua permissão para acessar o microfone.</p>
+        <p style="font-size:0.9rem; color:#94a3b8; margin-top:10px;">Clique no botão abaixo e permita o acesso quando solicitado.</p>
+        <button onclick="requestMicrophonePermission()">✅ Permitir Microfone</button>
+    </div>
 
     <div id="pocket-mode">
         <h2 style="color:white; margin-bottom:30px;">🔒 Modo Bolso Ativado</h2>
@@ -263,6 +361,13 @@
             </div>
         </div>
         
+        <div class="setting-row">
+            <div class="toggle-group">
+                <input type="checkbox" id="checkUpdates" checked>
+                <span class="toggle-label">🔄 Verificar atualizações automaticamente</span>
+            </div>
+        </div>
+        
         <div class="setting-row"><label>Velocidade Voz: <span id="vVal">1.0</span>x</label><input type="range" id="voiceSpeed" min="0.5" max="1.5" step="0.1" value="1.0" class="color-bar-simple"></div>
         <div class="setting-row"><label>Tamanho Letra: <span id="fsVal">16</span>px</label><input type="range" id="fs" min="14" max="34" value="16" class="color-bar-simple"></div>
         
@@ -304,12 +409,154 @@
     </div>
 
     <script>
+        // ============================================
+        // CONFIGURAÇÕES DO APP
+        // ============================================
+        const APP_VERSION = '1.5.0';
+        const GITHUB_REPO = 'seu-usuario/seu-repositorio'; // ALTERE PARA SEU REPOSITÓRIO
+        const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
+
+        // ============================================
+        // SISTEMA DE ATUALIZAÇÃO
+        // ============================================
+        async function checkForUpdates() {
+            const checkUpdates = localStorage.getItem('checkUpdates') !== 'false';
+            if (!checkUpdates) return;
+
+            try {
+                const response = await fetch(GITHUB_API_URL);
+                if (!response.ok) throw new Error('Não foi possível verificar atualizações');
+                
+                const data = await response.json();
+                const latestVersion = data.tag_name.replace('v', '');
+                
+                // Compara versões
+                if (isNewerVersion(latestVersion, APP_VERSION)) {
+                    showUpdateNotification(latestVersion, data.body || '');
+                }
+            } catch (error) {
+                console.log('Erro ao verificar atualizações:', error);
+            }
+        }
+
+        function isNewerVersion(latest, current) {
+            const latestParts = latest.split('.').map(Number);
+            const currentParts = current.split('.').map(Number);
+            
+            for (let i = 0; i < Math.max(latestParts.length, currentParts.length); i++) {
+                const latestNum = latestParts[i] || 0;
+                const currentNum = currentParts[i] || 0;
+                if (latestNum > currentNum) return true;
+                if (latestNum < currentNum) return false;
+            }
+            return false;
+        }
+
+        function showUpdateNotification(version, changelog) {
+            const notification = document.getElementById('update-notification');
+            const messageEl = document.getElementById('update-message');
+            const versionEl = document.getElementById('update-version');
+            
+            // Mostra a notificação
+            messageEl.textContent = `📱 Nova atualização disponível!`;
+            versionEl.textContent = `v${version}`;
+            notification.style.display = 'block';
+            
+            // Adiciona o changelog se disponível
+            if (changelog) {
+                const changelogPreview = changelog.split('\n').slice(0, 3).join('\n');
+                if (changelogPreview) {
+                    messageEl.textContent = `📱 Nova versão v${version} disponível!`;
+                }
+            }
+            
+            // Esconde após 3 segundos
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+            
+            // Salva a versão que foi notificada
+            localStorage.setItem('lastNotifiedVersion', version);
+        }
+
+        // ============================================
+        // PERMISSÃO DO MICROFONE (APK)
+        // ============================================
+        async function requestMicrophonePermission() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: { 
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    } 
+                });
+                stream.getTracks().forEach(track => track.stop());
+                permissionGranted = true;
+                document.getElementById('permissionPopup').classList.remove('show');
+                micStatus.textContent = '✅ Permissão concedida! Clique no microfone.';
+                initSpeech();
+                
+                // Tenta iniciar o microfone automaticamente
+                setTimeout(() => {
+                    if (rec && permissionGranted) {
+                        try {
+                            rec.start();
+                            micStatus.textContent = '🎤 Ouvindo... Fale agora';
+                        } catch(e) {}
+                    }
+                }, 500);
+                
+                return true;
+            } catch (err) {
+                console.error('Erro ao solicitar permissão:', err);
+                micStatus.textContent = '❌ Permissão negada. Tente novamente.';
+                document.getElementById('permissionPopup').classList.add('show');
+                return false;
+            }
+        }
+
+        async function checkMicrophonePermission() {
+            try {
+                // Tenta usar a Permissions API
+                if (navigator.permissions && navigator.permissions.query) {
+                    const result = await navigator.permissions.query({ name: 'microphone' });
+                    if (result.state === 'granted') {
+                        permissionGranted = true;
+                        document.getElementById('permissionPopup').classList.remove('show');
+                        micStatus.textContent = '🎤 Clique no microfone para começar';
+                        initSpeech();
+                        return;
+                    } else if (result.state === 'prompt') {
+                        document.getElementById('permissionPopup').classList.add('show');
+                        return;
+                    }
+                }
+                
+                // Fallback: tenta acessar diretamente
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                stream.getTracks().forEach(track => track.stop());
+                permissionGranted = true;
+                document.getElementById('permissionPopup').classList.remove('show');
+                micStatus.textContent = '🎤 Clique no microfone para começar';
+                initSpeech();
+                
+            } catch (err) {
+                console.log('Permissão não concedida:', err);
+                document.getElementById('permissionPopup').classList.add('show');
+            }
+        }
+
+        // ============================================
+        // VARIÁVEIS GLOBAIS
+        // ============================================
         const chat = document.getElementById('chat-scroll');
         const pocket = document.getElementById('pocket-mode');
         const micStatus = document.getElementById('micStatus');
         let rec = null;
         let isMicEnabled = false;
         let isListening = false;
+        let permissionGranted = false;
 
         function activateLock() {
             pocket.style.display = 'flex';
@@ -323,24 +570,23 @@
 
         pocket.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); }, { passive: false });
 
-        // Função melhorada para voz feminina americana mais natural
+        // ============================================
+        // SISTEMA DE VOZ
+        // ============================================
         function getVoice() {
             return new Promise((resolve) => {
                 const voices = window.speechSynthesis.getVoices();
                 
-                // Lista de vozes femininas americanas preferidas
                 const preferredVoices = [
-                    'Google US English',     // Chrome/Android
-                    'Samantha',              // iOS/Mac
-                    'Microsoft Zira Desktop', // Windows
+                    'Google US English',
+                    'Samantha',
+                    'Microsoft Zira Desktop',
                     'Google UK English Female',
                     'Google español de Estados Unidos'
                 ];
                 
-                // Tenta encontrar uma voz feminina americana
                 let selectedVoice = null;
                 
-                // 1. Tenta encontrar pelas preferidas
                 for (const pref of preferredVoices) {
                     const voice = voices.find(v => v.name.includes(pref) && v.lang.startsWith('en'));
                     if (voice) {
@@ -349,7 +595,6 @@
                     }
                 }
                 
-                // 2. Se não encontrou, procura qualquer voz feminina em inglês
                 if (!selectedVoice) {
                     selectedVoice = voices.find(v => 
                         v.lang.startsWith('en') && 
@@ -357,7 +602,6 @@
                     );
                 }
                 
-                // 3. Último recurso: qualquer voz em inglês
                 if (!selectedVoice) {
                     selectedVoice = voices.find(v => v.lang.startsWith('en'));
                 }
@@ -375,16 +619,14 @@
                 
                 if (voice) {
                     utterance.voice = voice;
-                    // Força o idioma para inglês para manter a voz americana
                     utterance.lang = 'en-US';
                 } else {
-                    // Fallback para o idioma original
                     const codes = {'pt':'pt-BR','en':'en-US','es':'es-ES','fr':'fr-FR','it':'it-IT','de':'de-DE','ja':'ja-JP','zh':'zh-CN','ru':'ru-RU','ko':'ko-KR'};
                     utterance.lang = codes[lang] || 'en-US';
                 }
                 
                 utterance.rate = speed;
-                utterance.pitch = 1.0; // Tom normal para voz feminina
+                utterance.pitch = 1.0;
                 utterance.volume = 1;
                 
                 utterance.onend = () => {
@@ -409,16 +651,13 @@
             };
             
             if (!repeatMode) {
-                // Modo normal: fala apenas 1 vez
                 await play(text, baseSpeed);
                 return;
             }
             
-            // Modo repetição: fala 3 vezes (normal, lenta, palavra por palavra)
             await play(text, baseSpeed);
             await play(text, baseSpeed * 0.4);
             
-            // Palavra por palavra (apenas para repetição)
             const words = text.split(' ');
             for (let w of words) {
                 if (w.trim()) {
@@ -427,6 +666,9 @@
             }
         }
 
+        // ============================================
+        // FUNÇÕES DO CHAT
+        // ============================================
         function addBubble(o, t, lang) {
             const b1 = document.createElement('div'); 
             b1.className = 'bubble msg-user'; 
@@ -435,11 +677,9 @@
             const b2 = document.createElement('div'); 
             b2.className = 'bubble msg-bot';
             
-            // Container para o texto
             const textSpan = document.createElement('span');
             textSpan.textContent = t;
             
-            // Botão de copiar melhorado
             const copyBtn = document.createElement('button');
             copyBtn.className = 'copy-btn';
             copyBtn.textContent = '📋';
@@ -455,7 +695,6 @@
                         copyBtn.classList.remove('copied');
                     }, 2000);
                 }).catch(() => {
-                    // Fallback para navegadores que não suportam clipboard
                     const textarea = document.createElement('textarea');
                     textarea.value = t;
                     document.body.appendChild(textarea);
@@ -474,9 +713,7 @@
             b2.appendChild(textSpan);
             b2.appendChild(copyBtn);
             
-            // Clique na bolha para falar
             b2.onclick = (e) => {
-                // Se clicou no botão de copiar, não executa a fala
                 if (e.target === copyBtn) return;
                 speak3x(t, lang);
             };
@@ -510,6 +747,9 @@
             document.getElementById('txtIn').value = "";
         }
 
+        // ============================================
+        // SISTEMA DE MICROFONE
+        // ============================================
         function initSpeech() {
             const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SR) {
@@ -518,11 +758,10 @@
             }
             
             rec = new SR();
-            rec.continuous = false;
+            rec.continuous = true;
             rec.interimResults = true;
             rec.maxAlternatives = 1;
             
-            // Configura o idioma
             const langMap = {
                 'pt': 'pt-BR',
                 'en': 'en-US',
@@ -548,7 +787,8 @@
             rec.onend = () => {
                 document.getElementById('mic').classList.remove('active');
                 document.getElementById('mic').classList.remove('listening');
-                if (isMicEnabled) {
+                
+                if (isMicEnabled && permissionGranted) {
                     try {
                         rec.start();
                     } catch(e) {
@@ -567,6 +807,7 @@
                     isMicEnabled = false;
                     document.getElementById('mic').classList.remove('active');
                     document.getElementById('mic').classList.remove('listening');
+                    document.getElementById('permissionPopup').classList.add('show');
                 } else if (e.error === 'no-speech') {
                     micStatus.textContent = '🔇 Nada ouvido. Tente novamente.';
                 } else if (e.error === 'audio-capture') {
@@ -597,26 +838,30 @@
         }
 
         function restartMicrophone() {
-            if (rec && isMicEnabled) {
+            if (rec && isMicEnabled && permissionGranted) {
                 try {
                     rec.stop();
                     setTimeout(() => {
-                        const langMap = {
-                            'pt': 'pt-BR',
-                            'en': 'en-US',
-                            'es': 'es-ES',
-                            'fr': 'fr-FR',
-                            'it': 'it-IT',
-                            'de': 'de-DE',
-                            'ja': 'ja-JP',
-                            'zh': 'zh-CN',
-                            'ru': 'ru-RU',
-                            'ko': 'ko-KR'
-                        };
-                        rec.lang = langMap[document.getElementById('sl').value] || 'pt-BR';
-                        rec.start();
-                        micStatus.textContent = '🎤 Idiomas atualizados! Ouvindo...';
-                    }, 200);
+                        try {
+                            const langMap = {
+                                'pt': 'pt-BR',
+                                'en': 'en-US',
+                                'es': 'es-ES',
+                                'fr': 'fr-FR',
+                                'it': 'it-IT',
+                                'de': 'de-DE',
+                                'ja': 'ja-JP',
+                                'zh': 'zh-CN',
+                                'ru': 'ru-RU',
+                                'ko': 'ko-KR'
+                            };
+                            rec.lang = langMap[document.getElementById('sl').value] || 'pt-BR';
+                            rec.start();
+                            micStatus.textContent = '🎤 Idiomas atualizados! Ouvindo...';
+                        } catch(e) {
+                            console.log('Erro ao reiniciar:', e);
+                        }
+                    }, 300);
                 } catch(e) {
                     console.error('Erro ao reiniciar microfone:', e);
                 }
@@ -624,6 +869,11 @@
         }
 
         document.getElementById('mic').onclick = function() {
+            if (!permissionGranted) {
+                document.getElementById('permissionPopup').classList.add('show');
+                return;
+            }
+            
             if (!rec) {
                 initSpeech();
                 setTimeout(() => {
@@ -687,6 +937,9 @@
             restartMicrophone();
         };
 
+        // ============================================
+        // HISTÓRICO
+        // ============================================
         function saveHist(o, t, l) {
             let h = JSON.parse(localStorage.getItem('next_hist') || '[]');
             h.unshift({id: Date.now(), o, t, l});
@@ -715,6 +968,9 @@
             list.innerHTML = h.map(i => `<div class="hist-item"><div onclick="addBubble('${i.o.replace(/'/g,"\\'")}','${i.t.replace(/'/g,"\\'")}','${i.l}');closeMod('modSet')">${i.t.substring(0,30)}...</div><div class="del-hist" onclick="removeHist(${i.id})">×</div></div>`).join('');
         }
 
+        // ============================================
+        // CONFIGURAÇÕES
+        // ============================================
         function apply() {
             const h1 = document.getElementById('h1').value;
             const h2 = document.getElementById('h2').value;
@@ -737,22 +993,34 @@
 
         ['h1','h2','fs','voiceSpeed','fontFamily'].forEach(id => document.getElementById(id).oninput = apply);
 
+        // ============================================
+        // INICIALIZAÇÃO
+        // ============================================
         window.speechSynthesis.onvoiceschanged = () => {
             const voices = window.speechSynthesis.getVoices();
             console.log('Vozes disponíveis:', voices.map(v => `${v.name} (${v.lang})`));
         };
 
         window.onload = () => {
+            // Carrega configurações
             document.getElementById('h1').value = localStorage.getItem('next_h1') || 220;
             document.getElementById('h2').value = localStorage.getItem('next_h2') || 160;
             document.getElementById('fs').value = localStorage.getItem('next_fs') || 16;
             document.getElementById('fontFamily').value = localStorage.getItem('next_font') || "'Inter', sans-serif";
             document.getElementById('repeatMode').checked = localStorage.getItem('repeatMode') !== 'false';
+            document.getElementById('checkUpdates').checked = localStorage.getItem('checkUpdates') !== 'false';
             apply(); 
             renderHist();
             
-            initSpeech();
+            // Verifica permissão do microfone
+            checkMicrophonePermission();
             
+            // Verifica atualizações
+            setTimeout(() => {
+                checkForUpdates();
+            }, 2000);
+            
+            // Carrega vozes
             if (window.speechSynthesis.getVoices().length === 0) {
                 window.speechSynthesis.onvoiceschanged = () => {
                     console.log('Vozes carregadas:', window.speechSynthesis.getVoices().length);
@@ -760,10 +1028,18 @@
             }
         };
 
+        // Salva configurações
         document.getElementById('repeatMode').addEventListener('change', function() {
             localStorage.setItem('repeatMode', this.checked);
         });
 
+        document.getElementById('checkUpdates').addEventListener('change', function() {
+            localStorage.setItem('checkUpdates', this.checked);
+        });
+
+        // ============================================
+        // FUNÇÕES AUXILIARES
+        // ============================================
         function openMod(id) { 
             document.getElementById(id).style.display = 'flex'; 
         }
