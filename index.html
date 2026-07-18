@@ -80,38 +80,51 @@
             font-family: var(--chat-font); 
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             position: relative;
+            word-wrap: break-word;
         }
         
-        .msg-user { align-self: flex-start; background: hsl(var(--user-h), 60%, 45%); border-bottom-left-radius: 5px; }
+        .msg-user { 
+            align-self: flex-start; 
+            background: hsl(var(--user-h), 60%, 45%); 
+            border-bottom-left-radius: 5px; 
+        }
+        
         .msg-bot { 
             align-self: flex-end; 
             background: hsl(var(--trans-h), 60%, 40%); 
             border-bottom-right-radius: 5px; 
             cursor: pointer;
-            padding-right: 45px;
+            padding-right: 50px;
         }
         
         .copy-btn {
             position: absolute;
-            right: 8px;
-            top: 8px;
-            background: rgba(255,255,255,0.2);
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.15);
             border: none;
             color: white;
-            border-radius: 50%;
-            width: 28px;
-            height: 28px;
+            border-radius: 8px;
+            width: 32px;
+            height: 32px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s;
+            padding: 0;
+            line-height: 1;
         }
         
-        .copy-btn:hover {
-            background: rgba(255,255,255,0.4);
-            transform: scale(1.1);
+        .copy-btn:hover, .copy-btn:active {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-50%) scale(1.1);
+        }
+        
+        .copy-btn.copied {
+            background: #22c55e;
         }
 
         .nav-bar { 
@@ -125,6 +138,7 @@
             border-radius: 50%; margin-top: -45px; display: flex; align-items: center; justify-content: center; 
             box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4); border: 5px solid var(--bg-main); 
             transition: all 0.3s;
+            font-size: 30px;
         }
         .mic-btn.active { background: #ef4444; animation: pulse 1.2s infinite; }
         .mic-btn.listening { background: #22c55e; animation: pulse 1.2s infinite; }
@@ -416,30 +430,56 @@
         function addBubble(o, t, lang) {
             const b1 = document.createElement('div'); 
             b1.className = 'bubble msg-user'; 
-            b1.innerText = o;
+            b1.textContent = o;
             
             const b2 = document.createElement('div'); 
             b2.className = 'bubble msg-bot';
             
-            // Adiciona botão de copiar
+            // Container para o texto
+            const textSpan = document.createElement('span');
+            textSpan.textContent = t;
+            
+            // Botão de copiar melhorado
             const copyBtn = document.createElement('button');
             copyBtn.className = 'copy-btn';
-            copyBtn.innerHTML = '📋';
+            copyBtn.textContent = '📋';
+            copyBtn.setAttribute('aria-label', 'Copiar tradução');
+            
             copyBtn.onclick = (e) => {
                 e.stopPropagation();
                 navigator.clipboard.writeText(t).then(() => {
-                    copyBtn.innerHTML = '✅';
-                    setTimeout(() => copyBtn.innerHTML = '📋', 2000);
+                    copyBtn.textContent = '✓';
+                    copyBtn.classList.add('copied');
+                    setTimeout(() => {
+                        copyBtn.textContent = '📋';
+                        copyBtn.classList.remove('copied');
+                    }, 2000);
+                }).catch(() => {
+                    // Fallback para navegadores que não suportam clipboard
+                    const textarea = document.createElement('textarea');
+                    textarea.value = t;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    copyBtn.textContent = '✓';
+                    copyBtn.classList.add('copied');
+                    setTimeout(() => {
+                        copyBtn.textContent = '📋';
+                        copyBtn.classList.remove('copied');
+                    }, 2000);
                 });
             };
-            
-            const textSpan = document.createElement('span');
-            textSpan.textContent = t;
             
             b2.appendChild(textSpan);
             b2.appendChild(copyBtn);
             
-            b2.onclick = () => speak3x(t, lang);
+            // Clique na bolha para falar
+            b2.onclick = (e) => {
+                // Se clicou no botão de copiar, não executa a fala
+                if (e.target === copyBtn) return;
+                speak3x(t, lang);
+            };
             
             chat.appendChild(b1); 
             chat.appendChild(b2);
@@ -479,7 +519,7 @@
             
             rec = new SR();
             rec.continuous = false;
-            rec.interimResults = true; // Mudamos para true para feedback visual
+            rec.interimResults = true;
             rec.maxAlternatives = 1;
             
             // Configura o idioma
@@ -509,11 +549,9 @@
                 document.getElementById('mic').classList.remove('active');
                 document.getElementById('mic').classList.remove('listening');
                 if (isMicEnabled) {
-                    // Reinicia automaticamente se ainda estiver ativo
                     try {
                         rec.start();
                     } catch(e) {
-                        // Se não conseguir reiniciar, desativa
                         isMicEnabled = false;
                         micStatus.textContent = '🎤 Clique no microfone para começar';
                     }
@@ -540,10 +578,8 @@
                 const last = e.results.length - 1;
                 const text = e.results[last][0].transcript;
                 
-                // Feedback visual do que está sendo ouvido
                 micStatus.textContent = `🎤 "${text}"`;
                 
-                // Se for resultado final (não interim)
                 if (e.results[last].isFinal) {
                     const s = document.getElementById('sl').value;
                     const t = document.getElementById('tl').value;
@@ -560,12 +596,10 @@
             };
         }
 
-        // Função para reiniciar o microfone com novo idioma
         function restartMicrophone() {
             if (rec && isMicEnabled) {
                 try {
                     rec.stop();
-                    // Aguarda o stop para reiniciar
                     setTimeout(() => {
                         const langMap = {
                             'pt': 'pt-BR',
@@ -592,7 +626,6 @@
         document.getElementById('mic').onclick = function() {
             if (!rec) {
                 initSpeech();
-                // Pequena espera para inicializar
                 setTimeout(() => {
                     if (rec) {
                         try {
@@ -641,13 +674,10 @@
             }
         };
 
-        // Atualiza o microfone quando o idioma de origem muda
         document.getElementById('sl').addEventListener('change', function() {
             restartMicrophone();
         });
 
-        // Atualiza o microfone quando troca os idiomas com o botão swap
-        const originalSwap = document.getElementById('swap').onclick;
         document.getElementById('swap').onclick = function() {
             const s = document.getElementById('sl'); 
             const t = document.getElementById('tl');
@@ -707,7 +737,6 @@
 
         ['h1','h2','fs','voiceSpeed','fontFamily'].forEach(id => document.getElementById(id).oninput = apply);
 
-        // Carrega as vozes disponíveis
         window.speechSynthesis.onvoiceschanged = () => {
             const voices = window.speechSynthesis.getVoices();
             console.log('Vozes disponíveis:', voices.map(v => `${v.name} (${v.lang})`));
@@ -722,10 +751,8 @@
             apply(); 
             renderHist();
             
-            // Inicializa o reconhecimento de voz
             initSpeech();
             
-            // Carrega as vozes
             if (window.speechSynthesis.getVoices().length === 0) {
                 window.speechSynthesis.onvoiceschanged = () => {
                     console.log('Vozes carregadas:', window.speechSynthesis.getVoices().length);
@@ -733,7 +760,6 @@
             }
         };
 
-        // Salva o estado do repeatMode
         document.getElementById('repeatMode').addEventListener('change', function() {
             localStorage.setItem('repeatMode', this.checked);
         });
