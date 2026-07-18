@@ -18,8 +18,8 @@
             --user-h: 220;
             --trans-h: 160;
             --chat-f-size: 16px;
-            --chat-font: 'Inter', sans-serif; /* Variável para o Chat */
-            --ui-font: 'Inter', system-ui, -apple-system, sans-serif; /* Fonte fixa para o Menu */
+            --chat-font: 'Inter', sans-serif;
+            --ui-font: 'Inter', system-ui, -apple-system, sans-serif;
         }
 
         * { 
@@ -36,7 +36,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            font-family: var(--ui-font); /* Menu e Interface usam fonte fixa */
+            font-family: var(--ui-font);
         }
 
         #pocket-mode {
@@ -53,6 +53,17 @@
             touch-action: none;
         }
 
+        #pocket-mode button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            font-family: var(--ui-font);
+        }
+
         header { padding: 15px; background: var(--glass); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.1); }
         .lang-grid { display: grid; grid-template-columns: 1fr 50px 1fr; align-items: center; gap: 10px; }
         select { background: rgba(15, 23, 42, 0.8); color: white; border: 1px solid var(--accent); padding: 12px; border-radius: 15px; font-size: 0.85rem; outline: none; appearance: none; text-align: center; width: 100%; font-family: var(--ui-font); }
@@ -60,7 +71,6 @@
 
         #chat-scroll { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
         
-        /* AS BOLHAS SÃO AS ÚNICAS QUE MUDAM A FONTE */
         .bubble { 
             max-width: 85%; 
             padding: 15px; 
@@ -68,11 +78,41 @@
             line-height: 1.5; 
             font-size: var(--chat-f-size); 
             font-family: var(--chat-font); 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            position: relative;
         }
         
         .msg-user { align-self: flex-start; background: hsl(var(--user-h), 60%, 45%); border-bottom-left-radius: 5px; }
-        .msg-bot { align-self: flex-end; background: hsl(var(--trans-h), 60%, 40%); border-bottom-right-radius: 5px; cursor: pointer; }
+        .msg-bot { 
+            align-self: flex-end; 
+            background: hsl(var(--trans-h), 60%, 40%); 
+            border-bottom-right-radius: 5px; 
+            cursor: pointer;
+            padding-right: 45px;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .copy-btn:hover {
+            background: rgba(255,255,255,0.4);
+            transform: scale(1.1);
+        }
 
         .nav-bar { 
             background: var(--glass); backdrop-filter: blur(15px); padding: 10px 10px 30px; 
@@ -84,13 +124,55 @@
             grid-column: 3; width: 70px; height: 70px; background: var(--accent); color: white; 
             border-radius: 50%; margin-top: -45px; display: flex; align-items: center; justify-content: center; 
             box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4); border: 5px solid var(--bg-main); 
+            transition: all 0.3s;
         }
         .mic-btn.active { background: #ef4444; animation: pulse 1.2s infinite; }
+        .mic-btn.listening { background: #22c55e; animation: pulse 1.2s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
         .full-modal { position: fixed; inset: 0; background: var(--bg-main); z-index: 100; display: none; flex-direction: column; padding: 25px; overflow-y: auto; font-family: var(--ui-font); }
         .setting-row { margin-bottom: 20px; }
         .setting-row label { display: block; font-size: 0.9rem; color: var(--text-dim); margin-bottom: 8px; }
+        .setting-row .toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255,255,255,0.05);
+            padding: 12px 18px;
+            border-radius: 12px;
+        }
+        .toggle-group input[type="checkbox"] {
+            width: 50px;
+            height: 28px;
+            appearance: none;
+            background: #334155;
+            border-radius: 14px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+        .toggle-group input[type="checkbox"]:checked {
+            background: var(--accent);
+        }
+        .toggle-group input[type="checkbox"]::before {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            top: 3px;
+            left: 3px;
+            transition: all 0.3s;
+        }
+        .toggle-group input[type="checkbox"]:checked::before {
+            left: 25px;
+        }
+        .toggle-label {
+            color: var(--text);
+            font-size: 0.95rem;
+        }
         .color-bar { -webkit-appearance: none; width: 100%; height: 20px; border-radius: 10px; background: linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000); }
         .color-bar-simple { -webkit-appearance: none; width: 100%; height: 15px; border-radius: 10px; background: #334155; }
         .btn-action { background: var(--accent); color: white; border: none; padding: 18px; border-radius: 15px; font-weight: bold; cursor: pointer; width: 100%; font-family: var(--ui-font); }
@@ -101,11 +183,21 @@
             font-family: var(--ui-font);
         }
         .del-hist { color: #ef4444; font-size: 1.2rem; padding: 5px; cursor: pointer; }
+        
+        .mic-status {
+            text-align: center;
+            padding: 5px;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
     </style>
 </head>
 <body>
 
-    <div id="pocket-mode"></div>
+    <div id="pocket-mode">
+        <h2 style="color:white; margin-bottom:30px;">🔒 Modo Bolso Ativado</h2>
+        <button onclick="document.getElementById('pocket-mode').style.display='none'">Desbloquear</button>
+    </div>
 
     <header>
         <div class="lang-grid">
@@ -125,6 +217,7 @@
                 <option value="ru">🇷🇺 Russo</option><option value="ko">🇰🇷 Coreano</option>
             </select>
         </div>
+        <div class="mic-status" id="micStatus">🎤 Clique no microfone para começar</div>
     </header>
 
     <main id="chat-scroll"></main>
@@ -145,6 +238,17 @@
 
     <div id="modSet" class="full-modal">
         <div style="color:var(--accent); font-weight:bold; margin-bottom:20px; font-size:1.2rem;">⚙️ Configurações</div>
+        
+        <div class="setting-row">
+            <div class="toggle-group">
+                <input type="checkbox" id="repeatMode" checked>
+                <span class="toggle-label">🔊 Modo Repetição (falar 3x)</span>
+            </div>
+            <div style="font-size:0.75rem; color:var(--text-dim); margin-top:5px; padding-left:18px;">
+                Desative para falar apenas 1 vez
+            </div>
+        </div>
+        
         <div class="setting-row"><label>Velocidade Voz: <span id="vVal">1.0</span>x</label><input type="range" id="voiceSpeed" min="0.5" max="1.5" step="0.1" value="1.0" class="color-bar-simple"></div>
         <div class="setting-row"><label>Tamanho Letra: <span id="fsVal">16</span>px</label><input type="range" id="fs" min="14" max="34" value="16" class="color-bar-simple"></div>
         
@@ -188,49 +292,157 @@
     <script>
         const chat = document.getElementById('chat-scroll');
         const pocket = document.getElementById('pocket-mode');
+        const micStatus = document.getElementById('micStatus');
         let rec = null;
         let isMicEnabled = false;
+        let isListening = false;
 
         function activateLock() {
             pocket.style.display = 'flex';
-            const doc = document.documentElement;
-            if (doc.requestFullscreen) doc.requestFullscreen();
-            else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen();
         }
 
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
                 pocket.style.display = 'none';
-                if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
             }
         });
 
         pocket.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); }, { passive: false });
 
+        // Função melhorada para voz feminina americana mais natural
+        function getVoice() {
+            return new Promise((resolve) => {
+                const voices = window.speechSynthesis.getVoices();
+                
+                // Lista de vozes femininas americanas preferidas
+                const preferredVoices = [
+                    'Google US English',     // Chrome/Android
+                    'Samantha',              // iOS/Mac
+                    'Microsoft Zira Desktop', // Windows
+                    'Google UK English Female',
+                    'Google español de Estados Unidos'
+                ];
+                
+                // Tenta encontrar uma voz feminina americana
+                let selectedVoice = null;
+                
+                // 1. Tenta encontrar pelas preferidas
+                for (const pref of preferredVoices) {
+                    const voice = voices.find(v => v.name.includes(pref) && v.lang.startsWith('en'));
+                    if (voice) {
+                        selectedVoice = voice;
+                        break;
+                    }
+                }
+                
+                // 2. Se não encontrou, procura qualquer voz feminina em inglês
+                if (!selectedVoice) {
+                    selectedVoice = voices.find(v => 
+                        v.lang.startsWith('en') && 
+                        v.name.toLowerCase().includes('female')
+                    );
+                }
+                
+                // 3. Último recurso: qualquer voz em inglês
+                if (!selectedVoice) {
+                    selectedVoice = voices.find(v => v.lang.startsWith('en'));
+                }
+                
+                resolve(selectedVoice);
+            });
+        }
+
+        async function speakText(text, lang, speed = 1.0) {
+            return new Promise(async (resolve) => {
+                window.speechSynthesis.cancel();
+                
+                const voice = await getVoice();
+                const utterance = new SpeechSynthesisUtterance(text);
+                
+                if (voice) {
+                    utterance.voice = voice;
+                    // Força o idioma para inglês para manter a voz americana
+                    utterance.lang = 'en-US';
+                } else {
+                    // Fallback para o idioma original
+                    const codes = {'pt':'pt-BR','en':'en-US','es':'es-ES','fr':'fr-FR','it':'it-IT','de':'de-DE','ja':'ja-JP','zh':'zh-CN','ru':'ru-RU','ko':'ko-KR'};
+                    utterance.lang = codes[lang] || 'en-US';
+                }
+                
+                utterance.rate = speed;
+                utterance.pitch = 1.0; // Tom normal para voz feminina
+                utterance.volume = 1;
+                
+                utterance.onend = () => {
+                    setTimeout(resolve, 300);
+                };
+                
+                utterance.onerror = () => {
+                    resolve();
+                };
+                
+                window.speechSynthesis.speak(utterance);
+            });
+        }
+
         async function speak3x(text, lang) {
             window.speechSynthesis.cancel();
             const baseSpeed = parseFloat(document.getElementById('voiceSpeed').value);
-            const codes = {'pt':'pt-BR','en':'en-US','es':'es-ES','fr':'fr-FR','it':'it-IT','de':'de-DE','ja':'ja-JP','zh':'zh-CN','ru':'ru-RU','ko':'ko-KR'};
-            const langCode = codes[lang] || lang;
-
-            const play = (t, s) => new Promise(r => {
-                const u = new SpeechSynthesisUtterance(t);
-                u.lang = langCode; u.rate = s;
-                u.onend = () => setTimeout(r, 600);
-                window.speechSynthesis.speak(u);
-            });
-
+            const repeatMode = document.getElementById('repeatMode').checked;
+            
+            const play = async (t, s) => {
+                await speakText(t, lang, s);
+            };
+            
+            if (!repeatMode) {
+                // Modo normal: fala apenas 1 vez
+                await play(text, baseSpeed);
+                return;
+            }
+            
+            // Modo repetição: fala 3 vezes (normal, lenta, palavra por palavra)
             await play(text, baseSpeed);
             await play(text, baseSpeed * 0.4);
+            
+            // Palavra por palavra (apenas para repetição)
             const words = text.split(' ');
-            for (let w of words) { await play(w, 0.6); }
+            for (let w of words) {
+                if (w.trim()) {
+                    await play(w, 0.6);
+                }
+            }
         }
 
         function addBubble(o, t, lang) {
-            const b1 = document.createElement('div'); b1.className = 'bubble msg-user'; b1.innerText = o;
-            const b2 = document.createElement('div'); b2.className = 'bubble msg-bot'; b2.innerText = t;
+            const b1 = document.createElement('div'); 
+            b1.className = 'bubble msg-user'; 
+            b1.innerText = o;
+            
+            const b2 = document.createElement('div'); 
+            b2.className = 'bubble msg-bot';
+            
+            // Adiciona botão de copiar
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'copy-btn';
+            copyBtn.innerHTML = '📋';
+            copyBtn.onclick = (e) => {
+                e.stopPropagation();
+                navigator.clipboard.writeText(t).then(() => {
+                    copyBtn.innerHTML = '✅';
+                    setTimeout(() => copyBtn.innerHTML = '📋', 2000);
+                });
+            };
+            
+            const textSpan = document.createElement('span');
+            textSpan.textContent = t;
+            
+            b2.appendChild(textSpan);
+            b2.appendChild(copyBtn);
+            
             b2.onclick = () => speak3x(t, lang);
-            chat.appendChild(b1); chat.appendChild(b2);
+            
+            chat.appendChild(b1); 
+            chat.appendChild(b2);
             chat.scrollTop = chat.scrollHeight;
             saveHist(o, t, lang);
         }
@@ -240,39 +452,209 @@
                 const r = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(q)}&langpair=${f}|${t}`);
                 const d = await r.json();
                 return d.responseData.translatedText;
-            } catch(e) { return "Erro na tradução"; }
+            } catch(e) { 
+                return "Erro na tradução"; 
+            }
         }
 
         async function processTr() {
             const val = document.getElementById('txtIn').value;
             const s = document.getElementById('sl').value;
             const t = document.getElementById('tl').value;
-            if(val) { const res = await translate(val, s, t); addBubble(val, res, t); speak3x(res, t); }
-            closeMod('modEdit'); document.getElementById('txtIn').value = "";
+            if(val) { 
+                const res = await translate(val, s, t); 
+                addBubble(val, res, t); 
+                speak3x(res, t); 
+            }
+            closeMod('modEdit'); 
+            document.getElementById('txtIn').value = "";
         }
 
         function initSpeech() {
             const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SR) return;
+            if (!SR) {
+                micStatus.textContent = '❌ Reconhecimento de voz não suportado';
+                return;
+            }
+            
             rec = new SR();
-            rec.lang = document.getElementById('sl').value === 'pt' ? 'pt-BR' : document.getElementById('sl').value;
             rec.continuous = false;
-            rec.interimResults = false;
-            rec.onstart = () => { document.getElementById('mic').classList.add('active'); isMicEnabled = true; };
-            rec.onend = () => { if (isMicEnabled) rec.start(); else document.getElementById('mic').classList.remove('active'); };
+            rec.interimResults = true; // Mudamos para true para feedback visual
+            rec.maxAlternatives = 1;
+            
+            // Configura o idioma
+            const langMap = {
+                'pt': 'pt-BR',
+                'en': 'en-US',
+                'es': 'es-ES',
+                'fr': 'fr-FR',
+                'it': 'it-IT',
+                'de': 'de-DE',
+                'ja': 'ja-JP',
+                'zh': 'zh-CN',
+                'ru': 'ru-RU',
+                'ko': 'ko-KR'
+            };
+            rec.lang = langMap[document.getElementById('sl').value] || 'pt-BR';
+            
+            rec.onstart = () => {
+                document.getElementById('mic').classList.add('active');
+                document.getElementById('mic').classList.add('listening');
+                isMicEnabled = true;
+                isListening = true;
+                micStatus.textContent = '🎤 Ouvindo... Fale agora';
+            };
+            
+            rec.onend = () => {
+                document.getElementById('mic').classList.remove('active');
+                document.getElementById('mic').classList.remove('listening');
+                if (isMicEnabled) {
+                    // Reinicia automaticamente se ainda estiver ativo
+                    try {
+                        rec.start();
+                    } catch(e) {
+                        // Se não conseguir reiniciar, desativa
+                        isMicEnabled = false;
+                        micStatus.textContent = '🎤 Clique no microfone para começar';
+                    }
+                } else {
+                    micStatus.textContent = '🎤 Clique no microfone para começar';
+                }
+            };
+            
+            rec.onerror = (e) => {
+                console.error('Erro no microfone:', e.error);
+                if (e.error === 'not-allowed') {
+                    micStatus.textContent = '❌ Permissão negada. Habilite o microfone.';
+                    isMicEnabled = false;
+                    document.getElementById('mic').classList.remove('active');
+                    document.getElementById('mic').classList.remove('listening');
+                } else if (e.error === 'no-speech') {
+                    micStatus.textContent = '🔇 Nada ouvido. Tente novamente.';
+                } else if (e.error === 'audio-capture') {
+                    micStatus.textContent = '🎤 Aguardando permissão do microfone...';
+                }
+            };
+            
             rec.onresult = async (e) => {
-                const text = e.results[0][0].transcript;
-                const s = document.getElementById('sl').value;
-                const t = document.getElementById('tl').value;
-                const tr = await translate(text, s, t);
-                addBubble(text, tr, t); speak3x(tr, t);
+                const last = e.results.length - 1;
+                const text = e.results[last][0].transcript;
+                
+                // Feedback visual do que está sendo ouvido
+                micStatus.textContent = `🎤 "${text}"`;
+                
+                // Se for resultado final (não interim)
+                if (e.results[last].isFinal) {
+                    const s = document.getElementById('sl').value;
+                    const t = document.getElementById('tl').value;
+                    const tr = await translate(text, s, t);
+                    addBubble(text, tr, t);
+                    speak3x(tr, t);
+                    micStatus.textContent = '✅ Traduzido!';
+                    setTimeout(() => {
+                        if (isMicEnabled) {
+                            micStatus.textContent = '🎤 Ouvindo... Fale agora';
+                        }
+                    }, 1500);
+                }
             };
         }
 
+        // Função para reiniciar o microfone com novo idioma
+        function restartMicrophone() {
+            if (rec && isMicEnabled) {
+                try {
+                    rec.stop();
+                    // Aguarda o stop para reiniciar
+                    setTimeout(() => {
+                        const langMap = {
+                            'pt': 'pt-BR',
+                            'en': 'en-US',
+                            'es': 'es-ES',
+                            'fr': 'fr-FR',
+                            'it': 'it-IT',
+                            'de': 'de-DE',
+                            'ja': 'ja-JP',
+                            'zh': 'zh-CN',
+                            'ru': 'ru-RU',
+                            'ko': 'ko-KR'
+                        };
+                        rec.lang = langMap[document.getElementById('sl').value] || 'pt-BR';
+                        rec.start();
+                        micStatus.textContent = '🎤 Idiomas atualizados! Ouvindo...';
+                    }, 200);
+                } catch(e) {
+                    console.error('Erro ao reiniciar microfone:', e);
+                }
+            }
+        }
+
         document.getElementById('mic').onclick = function() {
-            if (!rec) initSpeech();
-            if (isMicEnabled) { isMicEnabled = false; rec.stop(); } 
-            else { isMicEnabled = true; rec.lang = document.getElementById('sl').value === 'pt' ? 'pt-BR' : document.getElementById('sl').value; rec.start(); }
+            if (!rec) {
+                initSpeech();
+                // Pequena espera para inicializar
+                setTimeout(() => {
+                    if (rec) {
+                        try {
+                            rec.start();
+                            micStatus.textContent = '🎤 Iniciando microfone...';
+                        } catch(e) {
+                            console.error('Erro ao iniciar:', e);
+                        }
+                    }
+                }, 300);
+                return;
+            }
+            
+            if (isMicEnabled) {
+                isMicEnabled = false;
+                isListening = false;
+                try {
+                    rec.stop();
+                } catch(e) {}
+                document.getElementById('mic').classList.remove('active');
+                document.getElementById('mic').classList.remove('listening');
+                micStatus.textContent = '🎤 Microfone desativado';
+            } else {
+                isMicEnabled = true;
+                try {
+                    const langMap = {
+                        'pt': 'pt-BR',
+                        'en': 'en-US',
+                        'es': 'es-ES',
+                        'fr': 'fr-FR',
+                        'it': 'it-IT',
+                        'de': 'de-DE',
+                        'ja': 'ja-JP',
+                        'zh': 'zh-CN',
+                        'ru': 'ru-RU',
+                        'ko': 'ko-KR'
+                    };
+                    rec.lang = langMap[document.getElementById('sl').value] || 'pt-BR';
+                    rec.start();
+                    micStatus.textContent = '🎤 Ouvindo... Fale agora';
+                } catch(e) {
+                    console.error('Erro ao iniciar microfone:', e);
+                    isMicEnabled = false;
+                    micStatus.textContent = '❌ Erro ao iniciar microfone';
+                }
+            }
+        };
+
+        // Atualiza o microfone quando o idioma de origem muda
+        document.getElementById('sl').addEventListener('change', function() {
+            restartMicrophone();
+        });
+
+        // Atualiza o microfone quando troca os idiomas com o botão swap
+        const originalSwap = document.getElementById('swap').onclick;
+        document.getElementById('swap').onclick = function() {
+            const s = document.getElementById('sl'); 
+            const t = document.getElementById('tl');
+            const temp = s.value; 
+            s.value = t.value; 
+            t.value = temp;
+            restartMicrophone();
         };
 
         function saveHist(o, t, l) {
@@ -289,7 +671,13 @@
             renderHist();
         }
 
-        function clearFullHist() { if(confirm("Apagar histórico?")) { localStorage.removeItem('next_hist'); renderHist(); } }
+        function clearFullHist() { 
+            if(confirm("Apagar histórico e limpar tela?")) { 
+                localStorage.removeItem('next_hist'); 
+                renderHist(); 
+                chat.innerHTML = "";
+            } 
+        }
 
         function renderHist() {
             const h = JSON.parse(localStorage.getItem('next_hist') || '[]');
@@ -303,9 +691,7 @@
             const fs = document.getElementById('fs').value;
             const font = document.getElementById('fontFamily').value;
             
-            // Aplica fonte APENAS na variável do chat
             document.documentElement.style.setProperty('--chat-font', font);
-            
             document.documentElement.style.setProperty('--user-h', h1);
             document.documentElement.style.setProperty('--trans-h', h2);
             document.documentElement.style.setProperty('--chat-f-size', fs + 'px');
@@ -313,14 +699,18 @@
             document.getElementById('fsVal').innerText = fs;
             document.getElementById('vVal').innerText = document.getElementById('voiceSpeed').value;
             
-            localStorage.setItem('next_h1', h1); localStorage.setItem('next_h2', h2); 
-            localStorage.setItem('next_fs', fs); localStorage.setItem('next_font', font);
+            localStorage.setItem('next_h1', h1); 
+            localStorage.setItem('next_h2', h2); 
+            localStorage.setItem('next_fs', fs); 
+            localStorage.setItem('next_font', font);
         }
 
         ['h1','h2','fs','voiceSpeed','fontFamily'].forEach(id => document.getElementById(id).oninput = apply);
-        document.getElementById('swap').onclick = () => {
-            const s = document.getElementById('sl'); const t = document.getElementById('tl');
-            const temp = s.value; s.value = t.value; t.value = temp;
+
+        // Carrega as vozes disponíveis
+        window.speechSynthesis.onvoiceschanged = () => {
+            const voices = window.speechSynthesis.getVoices();
+            console.log('Vozes disponíveis:', voices.map(v => `${v.name} (${v.lang})`));
         };
 
         window.onload = () => {
@@ -328,12 +718,37 @@
             document.getElementById('h2').value = localStorage.getItem('next_h2') || 160;
             document.getElementById('fs').value = localStorage.getItem('next_fs') || 16;
             document.getElementById('fontFamily').value = localStorage.getItem('next_font') || "'Inter', sans-serif";
-            apply(); renderHist();
+            document.getElementById('repeatMode').checked = localStorage.getItem('repeatMode') !== 'false';
+            apply(); 
+            renderHist();
+            
+            // Inicializa o reconhecimento de voz
+            initSpeech();
+            
+            // Carrega as vozes
+            if (window.speechSynthesis.getVoices().length === 0) {
+                window.speechSynthesis.onvoiceschanged = () => {
+                    console.log('Vozes carregadas:', window.speechSynthesis.getVoices().length);
+                };
+            }
         };
 
-        function openMod(id) { document.getElementById(id).style.display = 'flex'; }
-        function closeMod(id) { document.getElementById(id).style.display = 'none'; }
-        function clearChat() { if(confirm("Limpar tela?")) chat.innerHTML = ""; }
+        // Salva o estado do repeatMode
+        document.getElementById('repeatMode').addEventListener('change', function() {
+            localStorage.setItem('repeatMode', this.checked);
+        });
+
+        function openMod(id) { 
+            document.getElementById(id).style.display = 'flex'; 
+        }
+        
+        function closeMod(id) { 
+            document.getElementById(id).style.display = 'none'; 
+        }
+        
+        function clearChat() { 
+            if(confirm("Limpar tela?")) chat.innerHTML = ""; 
+        }
     </script>
 </body>
 </html>
