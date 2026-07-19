@@ -249,6 +249,7 @@
             color: var(--text-dim);
         }
         
+        /* Popup de permissão melhorado */
         .permission-request {
             display: none;
             position: fixed;
@@ -269,51 +270,106 @@
             display: flex;
         }
         
-        .permission-request button {
-            background: var(--accent);
+        .permission-request .permission-box {
+            background: rgba(30, 41, 59, 0.9);
+            border-radius: 25px;
+            padding: 40px 30px;
+            max-width: 400px;
+            width: 100%;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .permission-request h2 {
             color: white;
-            border: none;
-            padding: 20px 40px;
-            border-radius: 30px;
-            font-size: 1.2rem;
-            cursor: pointer;
-            margin-top: 20px;
-            font-family: var(--ui-font);
-            min-width: 200px;
+            margin-bottom: 15px;
+            font-size: 1.4rem;
         }
         
-        .permission-request .btn-close-permission {
-            background: transparent;
-            color: #94a3b8;
-            border: 2px solid #334155;
-            padding: 12px 30px;
-            font-size: 1rem;
-            margin-top: 10px;
-        }
-        
-        .permission-request .btn-close-permission:hover {
-            background: rgba(255,255,255,0.05);
+        .permission-request .icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
         }
         
         .permission-request p {
-            color: white;
-            font-size: 1.1rem;
+            color: #e2e8f0;
+            font-size: 1rem;
             line-height: 1.6;
-            max-width: 400px;
+            margin-bottom: 10px;
+        }
+        
+        .permission-request .sub-text {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
         }
         
         .permission-request .error-text {
             color: #ef4444;
             font-size: 0.9rem;
-            margin-top: 10px;
+            margin: 10px 0;
             display: none;
+            background: rgba(239, 68, 68, 0.1);
+            padding: 10px;
+            border-radius: 10px;
         }
         
         .permission-request .loading-text {
             color: #60a5fa;
             font-size: 0.9rem;
-            margin-top: 10px;
+            margin: 10px 0;
             display: none;
+        }
+        
+        .permission-request .success-text {
+            color: #22c55e;
+            font-size: 0.9rem;
+            margin: 10px 0;
+            display: none;
+        }
+        
+        .permission-request .btn-primary {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 16px 30px;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            font-family: var(--ui-font);
+            transition: all 0.3s;
+        }
+        
+        .permission-request .btn-primary:hover {
+            transform: scale(1.02);
+        }
+        
+        .permission-request .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .permission-request .btn-secondary {
+            background: transparent;
+            color: #94a3b8;
+            border: 2px solid #334155;
+            padding: 14px 30px;
+            border-radius: 15px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            font-family: var(--ui-font);
+            transition: all 0.3s;
+        }
+        
+        .permission-request .btn-secondary:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: #64748b;
         }
     </style>
 </head>
@@ -326,17 +382,25 @@
         <span class="update-version" id="update-version">v2.0.0</span>
     </div>
 
-    <!-- Popup de permissão do microfone -->
+    <!-- Popup de permissão do microfone MELHORADO -->
     <div class="permission-request" id="permissionPopup">
-        <h2 style="color:white; margin-bottom:20px;">🎤 Permissão do Microfone</h2>
-        <p>Para usar o tradutor por voz, precisamos da sua permissão para acessar o microfone.</p>
-        <p style="font-size:0.9rem; color:#94a3b8; margin-top:10px;">Clique no botão abaixo e permita o acesso quando solicitado.</p>
-        
-        <div class="loading-text" id="permissionLoading">⏳ Solicitando permissão...</div>
-        <div class="error-text" id="permissionError">❌ Não foi possível obter permissão. Tente novamente.</div>
-        
-        <button onclick="requestMicrophonePermission()" id="btnAllowPermission">✅ Permitir Microfone</button>
-        <button class="btn-close-permission" onclick="closePermissionPopup()">✕ Fechar</button>
+        <div class="permission-box">
+            <div class="icon">🎤</div>
+            <h2>Permissão do Microfone</h2>
+            <p>Para usar o tradutor por voz, precisamos da sua permissão para acessar o microfone.</p>
+            <p class="sub-text">Clique no botão abaixo e permita o acesso quando solicitado pelo sistema.</p>
+            
+            <div class="loading-text" id="permissionLoading">⏳ Solicitando permissão...</div>
+            <div class="success-text" id="permissionSuccess">✅ Permissão concedida com sucesso!</div>
+            <div class="error-text" id="permissionError">❌ Não foi possível obter permissão. Tente novamente.</div>
+            
+            <button class="btn-primary" onclick="requestMicrophonePermission()" id="btnAllowPermission">
+                ✅ Permitir Microfone
+            </button>
+            <button class="btn-secondary" onclick="closePermissionPopup()">
+                ✕ Fechar
+            </button>
+        </div>
     </div>
 
     <div id="pocket-mode">
@@ -446,7 +510,7 @@
         // CONFIGURAÇÕES DO APP
         // ============================================
         const APP_VERSION = '1.5.0';
-        const GITHUB_REPO = 'seu-usuario/seu-repositorio'; // ALTERE PARA SEU REPOSITÓRIO
+        const GITHUB_REPO = 'seu-usuario/seu-repositorio';
         const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 
         // ============================================
@@ -501,70 +565,92 @@
         }
 
         // ============================================
-        // PERMISSÃO DO MICROFONE (CORRIGIDA)
+        // PERMISSÃO DO MICROFONE - CORRIGIDA PARA APK
         // ============================================
         function closePermissionPopup() {
             document.getElementById('permissionPopup').classList.remove('show');
             document.getElementById('permissionLoading').style.display = 'none';
             document.getElementById('permissionError').style.display = 'none';
+            document.getElementById('permissionSuccess').style.display = 'none';
         }
 
         async function requestMicrophonePermission() {
             const btn = document.getElementById('btnAllowPermission');
             const loading = document.getElementById('permissionLoading');
             const error = document.getElementById('permissionError');
+            const success = document.getElementById('permissionSuccess');
             
             btn.disabled = true;
             loading.style.display = 'block';
             error.style.display = 'none';
+            success.style.display = 'none';
             btn.textContent = '⏳ Aguarde...';
             
             try {
+                // Tenta obter acesso ao microfone com configurações otimizadas para APK
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     audio: { 
                         echoCancellation: true,
                         noiseSuppression: true,
-                        autoGainControl: true
+                        autoGainControl: true,
+                        sampleRate: 44100,
+                        channelCount: 1
                     } 
                 });
                 
+                // Se chegou aqui, a permissão foi concedida
                 stream.getTracks().forEach(track => track.stop());
                 permissionGranted = true;
                 
                 loading.style.display = 'none';
-                btn.textContent = '✅ Permitido!';
+                success.style.display = 'block';
+                btn.textContent = '✅ Permissão Concedida!';
                 
+                // Fecha o popup e inicia o microfone
                 setTimeout(() => {
                     closePermissionPopup();
                     micStatus.textContent = '✅ Permissão concedida! Clique no microfone.';
                     initSpeech();
                     
+                    // Tenta iniciar o microfone automaticamente
                     setTimeout(() => {
                         if (rec && permissionGranted) {
                             try {
                                 rec.start();
                                 micStatus.textContent = '🎤 Ouvindo... Fale agora';
+                                document.getElementById('mic').classList.add('active');
+                                document.getElementById('mic').classList.add('listening');
+                                isMicEnabled = true;
                             } catch(e) {
-                                console.log('Erro ao iniciar microfone:', e);
+                                console.log('Microfone iniciado manualmente:', e);
+                                micStatus.textContent = '🎤 Clique no microfone para começar';
                             }
                         }
                     }, 500);
-                }, 500);
+                }, 800);
                 
                 return true;
+                
             } catch (err) {
                 console.error('Erro ao solicitar permissão:', err);
                 loading.style.display = 'none';
                 error.style.display = 'block';
                 btn.disabled = false;
-                btn.textContent = '✅ Tentar Novamente';
-                micStatus.textContent = '❌ Permissão negada. Clique no botão para tentar novamente.';
+                btn.textContent = '🔄 Tentar Novamente';
+                micStatus.textContent = '❌ Permissão negada. Clique em "Tentar Novamente".';
+                
+                // Se o erro for de permissão negada, mostra dica
+                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                    error.textContent = '❌ Permissão negada pelo sistema. Vá em Configurações > Apps > [Seu App] > Permissões e ative o microfone.';
+                }
+                
                 return false;
             }
         }
 
         async function checkMicrophonePermission() {
             try {
+                // Verifica se já tem permissão
                 if (navigator.permissions && navigator.permissions.query) {
                     const result = await navigator.permissions.query({ name: 'microphone' });
                     if (result.state === 'granted') {
@@ -574,11 +660,13 @@
                         initSpeech();
                         return;
                     } else if (result.state === 'prompt') {
+                        // Mostra o popup se ainda não decidiu
                         document.getElementById('permissionPopup').classList.add('show');
                         return;
                     }
                 }
                 
+                // Tenta acessar diretamente para verificar
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 stream.getTracks().forEach(track => track.stop());
                 permissionGranted = true;
@@ -588,6 +676,7 @@
                 
             } catch (err) {
                 console.log('Permissão não concedida:', err);
+                // Mostra o popup se não tiver permissão
                 document.getElementById('permissionPopup').classList.add('show');
             }
         }
@@ -626,8 +715,7 @@
                     'Google US English',
                     'Samantha',
                     'Microsoft Zira Desktop',
-                    'Google UK English Female',
-                    'Google español de Estados Unidos'
+                    'Google UK English Female'
                 ];
                 
                 let selectedVoice = null;
@@ -1056,8 +1144,12 @@
             apply(); 
             renderHist();
             
-            checkMicrophonePermission();
+            // Verifica permissão do microfone
+            setTimeout(() => {
+                checkMicrophonePermission();
+            }, 500);
             
+            // Verifica atualizações
             setTimeout(() => {
                 checkForUpdates();
             }, 2000);
